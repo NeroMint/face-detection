@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import Clarifai from 'clarifai';
+//import Clarifai from 'clarifai';
 import './App.css';
 import Navigation from './Components/Navigation/Navigation';
 import Logo from './Components/Logo/Logo';
@@ -23,9 +23,7 @@ const particleOptions = {
   }
 };
 
-const app = new Clarifai.App({
-  apiKey: '911b27c66c7c4b67925fbb6d3f2e2396'
- });
+
 
 class App extends Component {
 
@@ -36,7 +34,10 @@ class App extends Component {
       imageLink: '',
       box: [],
       route: 'signin',
-      isSignined: false
+      isSignined: false,
+      username: '',
+      useremail:'',
+      entries: 0
     }
   }
 
@@ -61,8 +62,18 @@ class App extends Component {
     this.setState({box:box});
   }
 
-  onRouteChange = (route) => {
+  onRouteChange = (route, name, email, entries) => {
     this.setState({route:route})
+    if(route === 'home'){
+      this.setState({
+        input: '',
+        imageLink: '',
+        box: [],
+        username: name,
+        useremail: email,
+        entries: entries        
+      });
+    }
   }
 
   onInputChange = (event) => {
@@ -71,11 +82,21 @@ class App extends Component {
 
   onSubmit = () => {
     this.setState({imageLink: this.state.input});
-    app.models.predict(
-      Clarifai.FACE_DETECT_MODEL, 
-      this.state.input)
-      .then( data => this.displayFaceBox(this.calculateFaceLocation(data)))
-      .catch(err => console.log(err));
+    fetch('http://localhost:3001/image',{
+      method:'put',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        imageURL: this.state.input,
+        useremail: this.state.useremail
+      })
+    })
+    .then(response => response.json())
+    .then(data => {
+      //console.log(data);      
+      this.setState({entries:data.entries});
+      this.displayFaceBox(this.calculateFaceLocation(data.box));
+    })
+    .catch(err => console.log(err));
   }
 
   render() {    
@@ -90,7 +111,7 @@ class App extends Component {
             ? <div>
                 <Navigation onRouteChange={this.onRouteChange}/>
                 <Logo />
-                <Rank />
+                <Rank username={this.state.username} entries={this.state.entries}/>
                 <ImageLinkForm onInputChange={this.onInputChange} onSubmit={this.onSubmit} />
                 <FaceRecognition img={this.state.imageLink} box={this.state.box}/>
               </div>
