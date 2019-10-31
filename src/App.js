@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 //import Clarifai from 'clarifai';
 import './App.css';
 import Navigation from './Components/Navigation/Navigation';
+import {connect} from 'react-redux';
 import Logo from './Components/Logo/Logo';
 import ImageLinkForm from './Components/ImageLinkForm/ImageLinkForm';
 import Rank from './Components/Rank/Rank';
@@ -10,6 +11,7 @@ import FaceRecognition from './Components/FaceRecognition/FaceRecognition';
 import Register from './Components/Register/Register';
 import Particles from 'react-particles-js';
 
+import {setImageLink} from './actions';
 
 const particleOptions = {
   particles: {
@@ -24,14 +26,24 @@ const particleOptions = {
 };
 
 
+const mapStateToProps = (state) => {
+  return{
+    imageLink: state.detectFaces.imageLink
+  }
+}
+
+const mapDispatchToProps = (dispatch) => {
+  return {
+    onImageLinkChange : (event) => dispatch(setImageLink(event.target.value))
+  }
+}
+
 
 class App extends Component {
 
   constructor(){
     super();
     this.state = {
-      input: '',
-      imageLink: '',
       box: [],
       route: 'signin',
       isSignined: false,
@@ -66,8 +78,6 @@ class App extends Component {
     this.setState({route:route})
     if(route === 'home'){
       this.setState({
-        input: '',
-        imageLink: '',
         box: [],
         username: name,
         useremail: email,
@@ -76,17 +86,17 @@ class App extends Component {
     }
   }
 
-  onInputChange = (event) => {
-    this.setState({input: event.target.value});
-  }
+  // onInputChange = (event) => {
+  //   this.setState({input: event.target.value});
+  // }
 
   onSubmit = () => {
-    this.setState({imageLink: this.state.input});
+    //this.setState({imageLink: this.state.input});
     fetch('http://localhost:3001/image',{
       method:'put',
       headers:{'Content-Type':'application/json'},
       body: JSON.stringify({
-        imageURL: this.state.input,
+        imageURL: this.props.imageLink,
         useremail: this.state.useremail
       })
     })
@@ -99,7 +109,8 @@ class App extends Component {
     .catch(err => console.log(err));
   }
 
-  render() {    
+  render() {
+    const {imageLink, onImageLinkChange} = this.props;    
     return (
       <div className="App">
         <Particles className='particles'
@@ -112,8 +123,8 @@ class App extends Component {
                 <Navigation onRouteChange={this.onRouteChange}/>
                 <Logo />
                 <Rank username={this.state.username} entries={this.state.entries}/>
-                <ImageLinkForm onInputChange={this.onInputChange} onSubmit={this.onSubmit} />
-                <FaceRecognition img={this.state.imageLink} box={this.state.box}/>
+                <ImageLinkForm onInputChange={onImageLinkChange} onSubmit={this.onSubmit} />
+                <FaceRecognition img={imageLink} box={this.state.box}/>
               </div>
             : this.state.route === 'signin'
             ? <Signin onRouteChange={this.onRouteChange}/>
@@ -124,4 +135,4 @@ class App extends Component {
   }
 }
 
-export default App;
+export default connect(mapStateToProps, mapDispatchToProps)(App);
